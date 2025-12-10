@@ -447,7 +447,7 @@ else:
     st.header("Comprehensive Timeline")
     
     # 1. TIMELINE
-    fig = make_subplots(rows=5, cols=1, shared_xaxes=False, vertical_spacing=0.08, subplot_titles=("Negative Emotion %", "Dominant Emotion", "Daylight Hours", "Calories", "Indoor Light"))
+    fig = make_subplots(rows=5, cols=1, shared_xaxes=False, vertical_spacing=0.08, subplot_titles=("Negative Emotion %", "Dominant Emotion", "Daylight Hours", "Calories", "Environment Light"))
     
     if daily_emotion is not None:
         fig.add_trace(go.Scatter(x=daily_emotion['date'], y=daily_emotion['neg_pct'], mode='lines+markers', name='Neg %', line=dict(color='#e74c3c')), row=1, col=1)
@@ -500,7 +500,7 @@ else:
         if daily_weather is not None:
             corr_data = corr_data.merge(daily_weather.rename(columns={'dl': 'Daylight Hrs'}), on='date', how='outer')
         if not light_df.empty:
-            ld = light_df.groupby('date')['lux_value'].mean().reset_index().rename(columns={'lux_value': 'Indoor Lux'})
+            ld = light_df.groupby('date')['lux_value'].mean().reset_index().rename(columns={'lux_value': 'Env Lux'})
             ld['date'] = pd.to_datetime(ld['date'])
             corr_data = corr_data.merge(ld, on='date', how='outer')
         if daily_food is not None:
@@ -547,7 +547,7 @@ else:
             
             if 'Daylight Hrs' in corr_data: test_hyp('Daylight Hrs', 'Neg Emotion %', 'Less Daylight -> More Neg Emotion', '-')
             if 'Unhealthy %' in corr_data: test_hyp('Neg Emotion %', 'Unhealthy %', 'Neg Emotion -> More Unhealthy', '+')
-            if 'Indoor Lux' in corr_data: test_hyp('Indoor Lux', 'Neg Emotion %', 'Low Light -> More Neg Emotion', '-')
+            if 'Env Lux' in corr_data: test_hyp('Env Lux', 'Neg Emotion %', 'Low Light -> More Neg Emotion', '-')
             
             st.dataframe(pd.DataFrame(res), use_container_width=True)
         else:
