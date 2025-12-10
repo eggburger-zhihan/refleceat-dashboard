@@ -122,7 +122,8 @@ def load_data():
     
     for key in data:
         if not data[key].empty and 'timestamp' in data[key].columns:
-            data[key]['timestamp'] = pd.to_datetime(data[key]['timestamp'])
+            # 转换时间戳，移除时区信息
+            data[key]['timestamp'] = pd.to_datetime(data[key]['timestamp']).dt.tz_localize(None)
             data[key]['date'] = data[key]['timestamp'].dt.date
             data[key]['hour'] = data[key]['timestamp'].dt.hour
     
@@ -419,7 +420,7 @@ if is_single_day:
             st.dataframe(food_sorted[['timestamp', 'food_type', 'calories', 'health_category', 'emotion_before']], use_container_width=True)
 
     # Indoor Light
-    st.subheader("Environmental Light Throughout the Day")
+    st.subheader("Indoor Light Throughout the Day")
     if not light_df.empty:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=light_df['timestamp'], y=light_df['lux_value'], mode='lines', line=dict(color='#f1c40f', width=2), fill='tozeroy', fillcolor='rgba(241, 196, 15, 0.3)'))
@@ -461,7 +462,7 @@ else:
 
     # 2. EVENING ANALYSIS
     st.markdown("---")
-    st.header("Evening Pattern Analysis")
+    st.header("🌙 Evening Pattern Analysis")
     c1, c2 = st.columns(2)
     with c1:
         if not emotion_df.empty:
@@ -551,4 +552,4 @@ else:
 # FOOTER
 # =========================================================================
 st.markdown("---")
-st.caption("ReflecEAT - SmartSnack Monitor | Winnie Zhihan Wang | DE4-SIOT Final Project")
+st.caption("SmartSnack Monitor | Version 9 (Logic Restored) | DE4-SIOT Final Project")
