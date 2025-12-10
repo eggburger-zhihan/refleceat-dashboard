@@ -20,6 +20,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 from pathlib import Path
+from supabase import create_client
 
 # Try import scipy for hypothesis testing
 try:
@@ -104,33 +105,44 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 @st.cache_data(ttl=60)
 def load_data():
-    from supabase import create_client
     
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        data = {}
-        
-        # Load each table
-        data['emotion'] = pd.DataFrame(supabase.table('emotion_log').select('*').execute().data)
-        data['food'] = pd.DataFrame(supabase.table('food_event_log').select('*').execute().data)
-        data['light'] = pd.DataFrame(supabase.table('environment_light_log').select('*').execute().data)
-        data['weather'] = pd.DataFrame(supabase.table('weather_log').select('*').execute().data)
-        
+
+        def fetch_table(table_name):
+            resp = (
+                supabase
+                .table(table_name)
+                .select("*")
+                .order("timestamp", desc=False) 
+                .limit(5000)
+                .execute()
+            )
+            return pd.DataFrame(resp.data)
+
+        data = {
+            "emotion": fetch_table("emotion_log"),
+            "food": fetch_table("food_event_log"),
+            "light": fetch_table("environment_light_log"),
+            "weather": fetch_table("weather_log"),
+        }
+
     except Exception as e:
         st.error(f"Supabase error: {e}")
-        return {k: pd.DataFrame() for k in ['emotion', 'food', 'light', 'weather']}
-    
+        return {k: pd.DataFrame() for k in ["emotion", "food", "light", "weather"]}
+
     for key in data:
-        if not data[key].empty and 'timestamp' in data[key].columns:
-            # 转换时间戳，移除时区信息
-            data[key]['timestamp'] = pd.to_datetime(data[key]['timestamp']).dt.tz_localize(None)
-            data[key]['date'] = data[key]['timestamp'].dt.date
-            data[key]['hour'] = data[key]['timestamp'].dt.hour
-    
-    if not data['food'].empty:
-        data['food']['calories'] = data['food'].apply(
-            lambda r: get_calories(r['food_type'], r.get('calories')), axis=1)
-    
+        if not data[key].empty and "timestamp" in data[key].columns:
+            data[key]["timestamp"] = pd.to_datetime(data[key]["timestamp"]).dt.tz_localize(None)
+            data[key]["date"] = data[key]["timestamp"].dt.date
+            data[key]["hour"] = data[key]["timestamp"].dt.hour
+
+    if not data["food"].empty:
+        data["food"]["calories"] = data["food"].apply(
+            lambda r: get_calories(r["food_type"], r.get("calories")),
+            axis=1,
+        )
+
     return data
 
 # =========================================================================
@@ -420,7 +432,7 @@ if is_single_day:
             st.dataframe(food_sorted[['timestamp', 'food_type', 'calories', 'health_category', 'emotion_before']], use_container_width=True)
 
     # Indoor Light
-    st.subheader("Indoor Light Throughout the Day")
+    st.subheader("Environmental Light Throughout the Day")
     if not light_df.empty:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=light_df['timestamp'], y=light_df['lux_value'], mode='lines', line=dict(color='#f1c40f', width=2), fill='tozeroy', fillcolor='rgba(241, 196, 15, 0.3)'))
@@ -462,7 +474,7 @@ else:
 
     # 2. EVENING ANALYSIS
     st.markdown("---")
-    st.header("🌙 Evening Pattern Analysis")
+    st.header("Evening Pattern Analysis")
     c1, c2 = st.columns(2)
     with c1:
         if not emotion_df.empty:
@@ -552,4 +564,4 @@ else:
 # FOOTER
 # =========================================================================
 st.markdown("---")
-st.caption("SmartSnack Monitor | Version 9 (Logic Restored) | DE4-SIOT Final Project")
+st.caption("ReflecEAT - SmartSnack Monitor | Winnie Zhihan Wang | DE4-SIOT Final Project")
