@@ -133,7 +133,13 @@ def load_data():
 
     for key in data:
         if not data[key].empty and "timestamp" in data[key].columns:
-            data[key]["timestamp"] = pd.to_datetime(data[key]["timestamp"]).dt.tz_localize(None)
+            
+            data[key]["timestamp"] = pd.to_datetime(data[key]["timestamp"], errors='coerce')
+            
+            data[key] = data[key].dropna(subset=["timestamp"])
+            
+            data[key]["timestamp"] = data[key]["timestamp"].dt.tz_localize(None)
+            
             data[key]["date"] = data[key]["timestamp"].dt.date
             data[key]["hour"] = data[key]["timestamp"].dt.hour
 
